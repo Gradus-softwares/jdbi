@@ -20,6 +20,9 @@ import net.sf.cglib.proxy.MethodProxy;
 import org.skife.jdbi.v2.ConcreteStatementContext;
 import org.skife.jdbi.v2.GeneratedKeys;
 import org.skife.jdbi.v2.Update;
+import org.skife.jdbi.v2.Handle;
+import org.skife.jdbi.v2.TransactionCallback;
+import org.skife.jdbi.v2.TransactionStatus;
 import org.skife.jdbi.v2.exceptions.UnableToCreateStatementException;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
@@ -46,20 +49,46 @@ class UpdateHandler extends CustomizingStatementHandler
             this.returner = new Returner()
             {
                 @Override
-                public Object value(Update update, HandleDing baton)
+                public Object value(final Update update,final HandleDing baton)
                 {
-                    GeneratedKeys o = update.executeAndReturnGeneratedKeys(mapper);
-                    return magic.result(o, baton);
+                    Handle handle = baton.getHandle();
+                    if (!handle.isInTransaction()) {
+                        return handle.inTransaction(new TransactionCallback<Object>()
+                        {
+                            @Override
+                            public Object inTransaction(Handle conn, TransactionStatus status) throws Exception
+                            {
+                            GeneratedKeys o = update.executeAndReturnGeneratedKeys(mapper);
+                            return magic.result(o, baton);
+                            }
+                        });
+                    }else {
+                        GeneratedKeys o = update.executeAndReturnGeneratedKeys(mapper);
+                        return magic.result(o, baton);
+                    }
                 }
             };
         }
-        else {
+        else
+        {
             this.returner = new Returner()
             {
                 @Override
-                public Object value(Update update, HandleDing baton)
+                public Object value(final Update update, HandleDing baton)
                 {
+                Handle handle = baton.getHandle();
+                if (!handle.isInTransaction()) {
+                    return handle.inTransaction(new TransactionCallback<Object>()
+                    {
+                        @Override
+                        public Object inTransaction(Handle conn, TransactionStatus status) throws Exception
+                        {
+                            return update.execute();
+                        }
+                    });
+                } else {
                     return update.execute();
+                }
                 }
             };
         }

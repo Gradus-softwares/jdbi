@@ -1,6 +1,4 @@
 /*
- * Copyright (C) 2004 - 2014 Brian McCallister
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,16 +16,20 @@ package org.skife.jdbi.v2;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.skife.jdbi.v2.tweak.ResultColumnMapper;
+
 public final class ConcreteStatementContext implements StatementContext
 {
     private final Set<Cleanable> cleanables = new LinkedHashSet<Cleanable>();
     private final Map<String, Object>        attributes = new HashMap<String, Object>();
+    private final MappingRegistry mappingRegistry;
 
     private String            rawSql;
     private String            rewrittenSql;
@@ -39,10 +41,13 @@ public final class ConcreteStatementContext implements StatementContext
     private Method            sqlObjectMethod;
     private boolean           returningGeneratedKeys;
     private boolean           concurrentUpdatable;
+    private String[]          generatedKeysColumnNames;
+    private Foreman           foreman;
 
-    ConcreteStatementContext(Map<String, Object> globalAttributes)
+    ConcreteStatementContext(Map<String, Object> globalAttributes, MappingRegistry mappingRegistry)
     {
         attributes.putAll(globalAttributes);
+        this.mappingRegistry = mappingRegistry;
     }
 
     /**
@@ -82,6 +87,12 @@ public final class ConcreteStatementContext implements StatementContext
     public Map<String, Object> getAttributes()
     {
         return attributes;
+    }
+
+    @Override
+    public ResultColumnMapper columnMapperFor(Class type)
+    {
+        return mappingRegistry.columnMapperFor(type, this);
     }
 
     void setRawSql(String rawSql)
@@ -215,7 +226,21 @@ public final class ConcreteStatementContext implements StatementContext
     @Override
     public boolean isReturningGeneratedKeys()
     {
-        return returningGeneratedKeys;
+        return returningGeneratedKeys || generatedKeysColumnNames != null && generatedKeysColumnNames.length > 0;
+    }
+
+    @Override
+    public String[] getGeneratedKeysColumnNames()
+    {
+        if (generatedKeysColumnNames == null) {
+            return new String[0];
+        }
+        return Arrays.copyOf(generatedKeysColumnNames, generatedKeysColumnNames.length);
+    }
+
+    public void setGeneratedKeysColumnNames(String[] generatedKeysColumnNames)
+    {
+        this.generatedKeysColumnNames = Arrays.copyOf(generatedKeysColumnNames, generatedKeysColumnNames.length);
     }
 
     @Override
@@ -227,6 +252,11 @@ public final class ConcreteStatementContext implements StatementContext
     @Override
     public boolean isConcurrentUpdatable() {
         return concurrentUpdatable;
+    }
+
+    @Override
+    public Foreman getForeman() {
+        return foreman;
     }
 
     /**
@@ -249,5 +279,9 @@ public final class ConcreteStatementContext implements StatementContext
     public Collection<Cleanable> getCleanables()
     {
         return cleanables;
+    }
+
+    void setForeman(Foreman foreman) {
+        this.foreman = foreman;
     }
 }

@@ -1,6 +1,4 @@
 /*
- * Copyright (C) 2004 - 2014 Brian McCallister
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -61,9 +59,9 @@ class BeanPropertyArguments implements NamedArgumentFinder
             {
                 try
                 {
-                    return foreman.waffle(descriptor.getReadMethod().getReturnType(),
-                                   descriptor.getReadMethod().invoke(bean),
-                                   ctx);
+                    return foreman.createArgument(descriptor.getReadMethod().getReturnType(),
+                                                  descriptor.getReadMethod().invoke(bean),
+                                                  ctx);
                 }
                 catch (IllegalAccessException e)
                 {

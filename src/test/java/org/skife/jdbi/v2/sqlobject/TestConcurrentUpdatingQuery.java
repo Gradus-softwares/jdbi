@@ -1,6 +1,4 @@
 /*
- * Copyright (C) 2004 - 2014 Brian McCallister
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,13 +19,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.Query;
-import org.skife.jdbi.v2.Something;
 import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
-import org.skife.jdbi.v2.sqlobject.mixins.CloseMe;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
-import org.skife.jdbi.v2.util.StringMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -80,7 +73,7 @@ public class TestConcurrentUpdatingQuery
 
         final String name = handle.createQuery("select name from something where id = :id")
                 .bind("id", 7)
-                .map(StringMapper.FIRST)
+                .mapTo(String.class)
                 .first();
 
         assertEquals("Tom", name);

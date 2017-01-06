@@ -1,6 +1,4 @@
 /*
- * Copyright (C) 2004 - 2014 Brian McCallister
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -43,6 +41,10 @@ public class DefaultStatementBuilder implements StatementBuilder
     public PreparedStatement create(Connection conn, String sql, StatementContext ctx) throws SQLException
     {
         if (ctx.isReturningGeneratedKeys()) {
+            String[] columnNames = ctx.getGeneratedKeysColumnNames();
+            if (columnNames != null && columnNames.length > 0) {
+                return conn.prepareStatement(sql, columnNames);
+            }
             return conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         }
         else if (ctx.isConcurrentUpdatable()) {

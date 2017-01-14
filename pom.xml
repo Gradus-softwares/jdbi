@@ -24,7 +24,7 @@
     <groupId>org.jdbi</groupId>
     <artifactId>jdbi</artifactId>
     <name>jDBI</name>
-    <version>2.73_gradus</version>
+    <version>2.73.1_gradus</version>
     <packaging>jar</packaging>
     <description>
         jDBI is designed to provide convenient tabular data access in
@@ -46,7 +46,7 @@
     <scm>
         <connection>scm:git:git://github.com/jdbi/jdbi.git</connection>
         <developerConnection>scm:git:git@github.com:jdbi/jdbi.git</developerConnection>
-        <url>https://github.com/mcarabolante-gradus/jdbi/</url>
+        <url>https://github.com/Gradus-softwares/jdbi/</url>
       <tag>jdbi-2.73.1_gradus</tag>
   </scm>
 

@@ -1,9 +1,37 @@
+2.78
+  - @BindIn: fix handling of empty lists on Postgres
+  - clear SqlObject ThreadLocals on close, fixes leak on e.g. webapp reload
+  - expose Script.getStatements()
+
+2.77
+  - Improved BindIn functionality: can now process Iterables and arrays/varargs 
+    of any type, and has configurable handling for a null/empty argument.
+    Check the source code comments or your IDE hints for details.
+
+2.76
+  - SPRING BREAKING CHANGE: move from Spring 2 to Spring 3, how timely of us
+  - SQL lookups in the context of a SqlObject method now also find according
+    to the same rules as annotation
+  - DefaultMapper now has option to disable case folding
+  - Fix AbstractMethodError swallowing in SqlObject methods
+
+2.75
+  - simple @GetGeneratedKeys @SqlBatch support (only int keys for now)
+  - ClasspathStatementLocator performance improvements
+
+2.74
+  - cglib 3.2.2, asm 5.1; fixes codegen for new Java 8 bridge methods
+  - @UseStringTemplate3StatementLocator now caches created locators
+  - new @OutParameter annotation for fetching named out params on @SqlCall methods
+  - expose Handle.isClosed
+
 2.73
   - Allow clearing of bindings in SQLStatement
   - (finally!) parse Postgres CAST syntax 'value::type' properly in colon
     prefix statements
   - fix @SqlBatch hanging if you forget to include an Iterable-like param
   - fix @SqlUpdate @GetGeneratedKeys to allow non-number return types
+  - Expose Foreman on StatementContext
 
 2.72
   - Support for the ability to provide a list of the column names returned

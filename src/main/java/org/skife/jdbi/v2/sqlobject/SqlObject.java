@@ -13,6 +13,8 @@
  */
 package org.skife.jdbi.v2.sqlobject;
 
+import static java.util.Collections.synchronizedMap;
+
 import com.fasterxml.classmate.MemberResolver;
 import com.fasterxml.classmate.ResolvedType;
 import com.fasterxml.classmate.ResolvedTypeWithMembers;
@@ -32,15 +34,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.WeakHashMap;
+
+import org.skife.jdbi.v2.SqlObjectContext;
 
 class SqlObject
 {
-    private static final TypeResolver                                  typeResolver  = new TypeResolver();
-    private static final Map<Method, Handler>                          mixinHandlers = new HashMap<Method, Handler>();
-    private static final ConcurrentMap<Class<?>, Map<Method, Handler>> handlersCache = new ConcurrentHashMap<Class<?>, Map<Method, Handler>>();
-    private static final ConcurrentMap<Class<?>, Factory>              factories     = new ConcurrentHashMap<Class<?>, Factory>();
+    private static final TypeResolver                        typeResolver  = new TypeResolver();
+    private static final Map<Method, Handler>                mixinHandlers = new HashMap<Method, Handler>();
+    private static final Map<Class<?>, Map<Method, Handler>> handlersCache = synchronizedMap(new WeakHashMap<Class<?>, Map<Method, Handler>>());
+    private static final Map<Class<?>, Factory>              factories     = synchronizedMap(new WeakHashMap<Class<?>, Factory>());
 
     private static Method jdk8DefaultMethod = null;
 
@@ -77,7 +80,7 @@ class SqlObject
                 e.setSuperclass(sqlObjectType);
             }
             e.setInterfaces(interfaces.toArray(new Class[interfaces.size()]));
-            final SqlObject so = new SqlObject(buildHandlersFor(sqlObjectType), handle);
+            final SqlObject so = new SqlObject(sqlObjectType, buildHandlersFor(sqlObjectType), handle);
 
             e.setCallbackFilter(new CallbackFilter() {
 
@@ -112,14 +115,17 @@ class SqlObject
                     NoOp.INSTANCE
             });
             T t = (T) e.create();
-            T actual = (T) factories.putIfAbsent(sqlObjectType, (Factory) t);
-            if (actual == null) {
-                return t;
+
+            synchronized (factories) {
+                f = factories.get(sqlObjectType);
+                if (f == null) {
+                    f = (Factory) t;
+                    factories.put(sqlObjectType, f);
+                }
             }
-            f = (Factory) actual;
         }
 
-        final SqlObject so = new SqlObject(buildHandlersFor(sqlObjectType), handle);
+        final SqlObject so = new SqlObject(sqlObjectType, buildHandlersFor(sqlObjectType), handle);
         return (T) f.newInstance(new Callback[] {
                 new MethodInterceptor() {
                     @Override
@@ -164,8 +170,11 @@ class SqlObject
             else if (method.getName().equals("close") && method.getRawMember().getParameterTypes().length == 0) {
                 handlers.put(raw_method, new CloseHandler());
             }
+            else if (method.getName().equals("finalize") && method.getRawMember().getParameterTypes().length == 0) {
+                // no handler for finalize()
+            }
             else if (raw_method.isAnnotationPresent(Transaction.class)) {
-                handlers.put(raw_method, new PassThroughTransactionHandler(raw_method, raw_method.getAnnotation(Transaction.class)));
+                handlers.put(raw_method, new PassThroughTransactionHandler(raw_method.getAnnotation(Transaction.class)));
             }
             else if (mixinHandlers.containsKey(raw_method)) {
                 handlers.put(raw_method, mixinHandlers.get(raw_method));
@@ -187,12 +196,13 @@ class SqlObject
         return handlers;
     }
 
-
+    private final Class<?>             sqlObjectType;
     private final Map<Method, Handler> handlers;
     private final HandleDing           ding;
 
-    SqlObject(Map<Method, Handler> handlers, HandleDing ding)
+    SqlObject(Class<?> sqlObjectType, Map<Method, Handler> handlers, HandleDing ding)
     {
+        this.sqlObjectType = sqlObjectType;
         this.handlers = handlers;
         this.ding = ding;
     }
@@ -207,8 +217,10 @@ class SqlObject
         }
 
         Throwable doNotMask = null;
+        String methodName = method.toString();
+        SqlObjectContext oldContext = ding.setContext(new SqlObjectContext(sqlObjectType, method));
         try {
-            ding.retain(method.toString());
+            ding.retain(methodName);
             return handler.invoke(ding, proxy, args, mp);
         }
         catch (Throwable e) {
@@ -216,8 +228,9 @@ class SqlObject
             throw e;
         }
         finally {
+            ding.setContext(oldContext);
             try {
-                ding.release(method.toString());
+                ding.release(methodName);
             }
             catch (Throwable e) {
                 if (doNotMask==null) {

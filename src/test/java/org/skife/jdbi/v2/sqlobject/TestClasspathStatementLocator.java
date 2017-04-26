@@ -21,7 +21,9 @@ import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.Something;
 import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapper;
+import org.skife.jdbi.v2.sqlobject.mixins.GetHandle;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -38,6 +40,7 @@ public class TestClasspathStatementLocator {
         handle = dbi.open();
 
         handle.execute("create table something (id int primary key, name varchar(100))");
+        handle.execute("insert into something (id, name) values (6, 'Martin')");
     }
 
     @After
@@ -48,15 +51,57 @@ public class TestClasspathStatementLocator {
 
     @Test
     public void testBam() throws Exception {
-        handle.execute("insert into something (id, name) values (6, 'Martin')");
-
         Something s = handle.attach(Cromulence.class).findById(6L);
         assertThat(s.getName(), equalTo("Martin"));
     }
 
+    @Test
+    public void testOverride() throws Exception {
+        Something s = handle.attach(SubCromulence.class).findById(6L);
+        assertThat(s.getName(), equalTo("overridden"));
+    }
+
+    @Test
+    public void testCachedOverride() throws Exception {
+        Something s = handle.attach(Cromulence.class).findById(6L);
+        assertThat(s.getName(), equalTo("Martin"));
+
+        // and now make sure we don't accidentally cache the statement from above
+        s = handle.attach(SubCromulence.class).findById(6L);
+        assertThat(s.getName(), equalTo("overridden"));
+    }
+
     @RegisterMapper(SomethingMapper.class)
-    static interface Cromulence {
+    interface Cromulence {
         @SqlQuery
-        public Something findById(@Bind("id") Long id);
+        Something findById(@Bind("id") Long id);
+    }
+
+    @RegisterMapper(SomethingMapper.class)
+    interface SubCromulence extends Cromulence { }
+
+    @Test
+    public void testLocationWithConcreteMethod() {
+        // Issue #441 - A call to e.g. getHandle.createQuery() in a sql object method should look for SQL in the
+        // usual directory for the SQL object class.
+        Dao dao = handle.attach(Dao.class);
+
+        dao.insert(1, "Bob");
+        dao.insert(2, "Alice");
+
+        List<Something> list = dao.list();
+        assertThat(list.get(0).getName(), equalTo("Alice"));
+        assertThat(list.get(1).getName(), equalTo("Bob"));
+    }
+
+    static abstract class Dao implements GetHandle {
+        @SqlUpdate
+        abstract void insert(@Bind("id") long id, @Bind("name") String name);
+
+        public List<Something> list() {
+            return getHandle().createQuery("list-order-by-name")
+                    .map(new SomethingMapper())
+                    .list();
+        }
     }
 }

@@ -18,10 +18,12 @@ import org.skife.jdbi.v2.exceptions.StatementException;
 import org.skife.jdbi.v2.exceptions.UnableToCreateStatementException;
 
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.sf.cglib.transform.AbstractClassLoader;
+import net.sf.cglib.transform.ClassFilter;
 import org.skife.jdbi.v2.sqlobject.stringtemplate.TestingStatementContext;
 import org.skife.jdbi.v2.tweak.StatementLocator;
 
@@ -104,7 +106,7 @@ public class TestClasspathStatementLocator extends DBITestCase
     {
         ClassLoader ctx_loader = Thread.currentThread().getContextClassLoader();
         final AtomicInteger load_count = new AtomicInteger(0);
-        Thread.currentThread().setContextClassLoader(new AbstractClassLoader(ctx_loader, ctx_loader, null)
+        Thread.currentThread().setContextClassLoader(new AbstractClassLoader(ctx_loader, ctx_loader, new NoClassFilter())
         {
             @Override
             public InputStream getResourceAsStream(String s)
@@ -137,6 +139,11 @@ public class TestClasspathStatementLocator extends DBITestCase
             public Class<?> getSqlObjectType() {
                 return TestClasspathStatementLocator.class;
             }
+
+            @Override
+            public Method getSqlObjectMethod() {
+                return null;
+            }
         };
 
         String input = "missing query";
@@ -147,5 +154,44 @@ public class TestClasspathStatementLocator extends DBITestCase
         located = statementLocator.locate(input, statementContext);
 
         assertEquals(input, located); // second time reads from cache
+    }
+
+    @Test
+    public void testCachesOriginalQueryByMethodWhenNotFound() throws Exception
+    {
+        StatementLocator statementLocator = new ClasspathStatementLocator();
+        StatementContext statementContext = new TestingStatementContext(new HashMap<String, Object>()) {
+
+            @Override
+            public Class<?> getSqlObjectType() {
+                return TestClasspathStatementLocator.class;
+            }
+
+            @Override
+            public Method getSqlObjectMethod() {
+                try {
+                    return TestClasspathStatementLocator.class.getMethod("testCachesOriginalQueryByMethodWhenNotFound");
+                } catch (NoSuchMethodException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+
+        String input = "missing query";
+        String located = statementLocator.locate(input, statementContext);
+
+        assertEquals(input, located); // first time just caches it
+
+        located = statementLocator.locate(input, statementContext);
+
+        assertEquals(input, located); // second time reads from cache
+    }
+
+    static class NoClassFilter implements ClassFilter
+    {
+        @Override
+        public boolean accept(String className) {
+            return false;
+        }
     }
 }

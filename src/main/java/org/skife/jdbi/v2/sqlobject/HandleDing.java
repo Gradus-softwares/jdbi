@@ -14,9 +14,17 @@
 package org.skife.jdbi.v2.sqlobject;
 
 import org.skife.jdbi.v2.Handle;
+import org.skife.jdbi.v2.SqlObjectContext;
 
 interface HandleDing
 {
+    /**
+     * Sets a new sql object context and returns the old one
+     * @param context the new context
+     * @return the previous context
+     */
+    SqlObjectContext setContext(SqlObjectContext context);
+
     Handle getHandle();
 
     void release(String name);

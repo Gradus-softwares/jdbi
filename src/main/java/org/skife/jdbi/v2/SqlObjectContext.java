@@ -11,10 +11,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.skife.jdbi.v2.sqlobject.stringtemplate;
+package org.skife.jdbi.v2;
 
+import java.lang.reflect.Method;
 
-@UseStringTemplate3StatementLocator(value = "/org/skife/jdbi/v2/sqlobject/stringtemplate/SuperDrink.sql.stg", cacheable = false)
-public interface SuperDrink
-{
+public class SqlObjectContext {
+    public final Class<?> type;
+    public final Method method;
+
+    public SqlObjectContext() {
+        this(null, null);
+    }
+
+    public SqlObjectContext(Class<?> type, Method method) {
+        this.type = type;
+        this.method = method;
+    }
 }

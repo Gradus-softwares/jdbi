@@ -16,15 +16,15 @@
 
     <parent>
         <groupId>org.basepom</groupId>
-        <artifactId>basepom-standard-oss</artifactId>
-        <version>14</version>
+        <artifactId>basepom-oss</artifactId>
+        <version>19</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.jdbi</groupId>
     <artifactId>jdbi</artifactId>
     <name>jDBI</name>
-    <version>2.73.1_gradus</version>
+    <version>2.78_gradus</version>
     <packaging>jar</packaging>
     <description>
         jDBI is designed to provide convenient tabular data access in
@@ -47,7 +47,7 @@
         <connection>scm:git:git://github.com/jdbi/jdbi.git</connection>
         <developerConnection>scm:git:git@github.com:jdbi/jdbi.git</developerConnection>
         <url>https://github.com/Gradus-softwares/jdbi/</url>
-      <tag>jdbi-2.73.1_gradus</tag>
+        <tag>jdbi-2.78_gradus</tag>
   </scm>
 
     <developers>
@@ -82,11 +82,10 @@
         <project.build.targetJdk>1.6</project.build.targetJdk>
         <basepom.maven.version>2.0.9</basepom.maven.version>
         <dep.antlr.version>3.4</dep.antlr.version>
-        <dep.spring.version>2.0.1</dep.spring.version>
+        <dep.spring.version>3.0.0.RELEASE</dep.spring.version>
         <basepom.check.fail-all>true</basepom.check.fail-all>
 
         <basepom.test.fork-count>8</basepom.test.fork-count>
-        <basepom.test.reuse-vm>false</basepom.test.reuse-vm>
         <basepom.test.timeout>120</basepom.test.timeout>
     </properties>
 
@@ -95,7 +94,7 @@
         <dependency>
             <groupId>cglib</groupId>
             <artifactId>cglib</artifactId>
-            <version>3.1</version>
+            <version>3.2.2</version>
         </dependency>
 
         <dependency>
@@ -113,12 +112,27 @@
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>spring</artifactId>
+            <artifactId>spring-beans</artifactId>
+            <version>${dep.spring.version}</version>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>${dep.spring.version}</version>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
             <version>${dep.spring.version}</version>
             <optional>true</optional>
         </dependency>
@@ -126,6 +140,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+            <version>1.7.12</version>
             <optional>true</optional>
         </dependency>
 
@@ -149,12 +164,14 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <version>4.12</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-core</artifactId>
+            <version>1.3</version>
             <scope>test</scope>
         </dependency>
 
@@ -174,6 +191,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
+            <version>19.0</version>
             <scope>test</scope>
         </dependency>
 
@@ -186,7 +204,7 @@
 
         <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>spring-mock</artifactId>
+            <artifactId>spring-test</artifactId>
             <version>${dep.spring.version}</version>
             <scope>test</scope>
         </dependency>
@@ -225,7 +243,7 @@
             <dependency>
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm</artifactId>
-                <version>5.0.2</version>
+                <version>5.1</version>
             </dependency>
 
             <dependency>
@@ -291,6 +309,13 @@
                                 <vendor>sun</vendor>
                             </jdk>
                         </toolchains>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <forkCount>1</forkCount>
                     </configuration>
                 </plugin>
             </plugins>

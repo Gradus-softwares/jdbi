@@ -53,7 +53,7 @@ public @interface BindIn
     /**
      * what to do when the argument is null or empty
      */
-    EmptyHandling onEmpty() default EmptyHandling.THROW;
+    EmptyHandling onEmpty() default EmptyHandling.NULL;
 
     final class CustomizerFactory implements SqlStatementCustomizerFactory
     {

@@ -24,10 +24,7 @@ import org.skife.jdbi.v2.Something;
 import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator;
 import org.skife.jdbi.v2.unstable.BindIn;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static org.skife.jdbi.v2.unstable.BindIn.EmptyHandling.THROW;
 import static org.skife.jdbi.v2.unstable.BindIn.EmptyHandling.VOID;
@@ -213,10 +210,24 @@ public class BindInTest
         s.get(in.iterator());
     }
 
+    @Test
+    public void testDefaultOnEmptyShouldAddNull()
+    {
+        final SomethingByIteratorHandleDefault s = handle.attach(SomethingByIteratorHandleDefault.class);
+        s.nothing(Collections.<Integer>emptyList());
+        s.emptyUpdate(Collections.<Integer>emptyList());
+    }
+
     @UseStringTemplate3StatementLocator
     private interface SomethingByIteratorHandleDefault
     {
         @SqlQuery("select id, name from something where id in (<ids>)")
         List<Something> get(@BindIn("ids") Iterator<Integer> ids);
+
+        @SqlQuery("select id from something where id in (<ids>)")
+        List<Integer> nothing(@BindIn("ids") List<Integer> ids);
+
+        @SqlUpdate("update something set id = 5 where id in (<ids>)")
+        void  emptyUpdate(@BindIn("ids") List<Integer> ids);
     }
 }

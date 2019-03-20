@@ -1,10 +1,182 @@
+3.2.0
+  - New modules:
+    - jdbi3-testing - JdbiRule test rule for JUnit tests
+    - jdbi3-freemarker - render SQL templates using FreeMarker
+    - jdbi3-commons-text - render SQL templates using Apache commons-text StringSubstitutor
+    - jdbi3-sqlite - plugin for use with SQLite database
+  - New API
+    - @SqlScript annotation to execute multiple statements
+    - SqlLogger for logging queries, timing, and exceptions. Replacing TimingCollector, which
+      is now deprecated
+    - Add ResultProducers.allowNoResults configuration option in case you may or may not get a
+      result set
+    - MessageFormatTemplateEngine template engine, renders SQL using java.text.MessageFormat
+    - SqliteDatabaseRule test rule (in jdbi3-core test jar)
+  - Improvements
+    - @MaxRows.value() may now be omitted when used as a parameter annotation
+    - SerializableTransactionRunner 'max retries' handling throws more meaningful exceptions
+    - Postgres operators like '?' and '?|' may now be used without being mistaken for a positional
+      parameter. Escape them in your SQL statements as '??' and '??|', respectively.
+    - Support for binding OptionalInt, OptionalLong, and OptionalDouble parameters.
+  - Bug fixes:
+    - SqlObject default methods now work in JDK 9
+    - SqlObject no longer gets confused about result types due to bridge methods
+    - StringTemplate no longer shares template groups across threads, to work around concurrency
+      issues in StringTemplate project
+    - DefineStatementLexer handles predicates that look like definitions better. No more errors
+      on unmatched "<" when you really meant "less than!"
+    - LocalDate binding should store the correct date when the server and database are running
+      in different time zones.
+
+3.1.1
+  - Improve IBM JDK compatibility with default methods
+  - Allow non-public SqlObject types!!!
+  - Fix some ThreadLocal and StringTemplate leaks
+
+3.1.0
+  - The strict transaction handling check in Handle.close() may be disabled via
+    getConfig(Handles.class).setForceEndTransactions(false).
+  - StringTemplate SQL locator supports StringTemplate groups importing from other groups.
+  - New RowReducer interface and related APIs make it simple to reduce master-detail joins
+    into a series of master objects with the detail objects attached. See:
+    - RowReducer interface
+    - LinkedHashMapRowReducer abstract implementation for 90% of cases
+    - ResultBearing.reduceRows(RowReducer)
+    - @UseRowReducer SQL Object annotation
+  - Fixed bug in PreparedBatch preventing batches from being reusable.
+  - Additional Kotlin convenience methods to avoid adding ".java" on every Kotlin type:
+    - Jdbi.withExtension(KClass, ExtensionCallback)
+    - Jdbi.useExtension(KClass, ExtensionConsumer)
+    - Jdbi.withExtensionUnchecked(KClass, callback)
+    - Jdbi.useExtensionUnchecked(KClass, callback)
+  - EnumMapper tries a case insensitive match if there's no exact match
+  - OracleReturning.returningDml() supports named parameters
+  - Fixed regression in Postgres typed enum mapper, which caused a fallback on the
+    Jdbi default enum mapper.
+
+3.0.1
+  - Kotlin mapper support for @Nested annotation
+  - ReflectionMapperUtil utility class made public.
+  - collectInto() and SQL Object return type support for OptionalInt, OptionalLong,
+    and OptionalDouble, and Vavr Option.
+  - New jdbi3-sqlite plugin with SQLite-specific binding and column mapping for java.net.URL.
+  - Workaround for multithreaded race condition loading StringTemplate STGroups and templates.
+  - Column mapper for Vavr Option.
+
+3.0.0
+  - [breaking] Added ConfigRegistry parameter to SqlLocator.locate() method.
+
+3.0.0-rc2
+  - Row and column mapper for Optional types
+  - Binding of nested attributes e.g. ":user.address.city" with bindBean(), bindMethods(),
+    bindFields(), as well as @BindBean, @BindMethods, and @BindFields in SQL objects.
+  - Mapping of nested attributes with BeanMapper, ConstructorMapper, and FieldMapper, using
+    the @Nested annotation.
+  - SQL Objects inherit class annotations from supertypes.
+  - bindList() and @BindList now follow the parameter naming style of the active SqlParser,
+    via the new SqlParser.nameParameter() method. e.g. ":foo" for ColonPrefixSqlParser, vs
+    "#foo" for HashPrefixSqlParser.
+
+3.0.0-rc1
+  - SQL Object methods may have a Consumer<T> instead of a return type. See
+    http://jdbi.github.io/#_consumer_methods.
+
+3.0.0-beta4
+  - [breaking] ResultSetMapper -> ResultSetScanner; reducing overloaded 'Mapper'
+  - PreparedBatch: throw an exception if you try to add() an empty binding
+  - [breaking] Removed column mapper fallback behavior from
+    StatementContext.findRowMapperFor() and RowMappers.findFor(), in favor or new
+    StatementContext.findMapperFor() and Mappers.findFor() methods. Previously,
+    findRowMapperFor() would first consult the RowMappers registry, then the
+    ColumnMappers registry if no RowMapper was registered for a given type. Thus:
+    - StatementContext.findMapperFor(...) or Mappers.findFor() may return a row mapper or
+      a first-column mapper.
+    - StatementContext.findRowMapperFor(...) or RowMappers.findFor() returns only row
+      mappers
+    - StatementContext.findColumnMapperFor(...) or ColumnMappers.findFor() returns only
+      column mapper
+  - [breaking] Renamed @SqlMethodAnnotation meta-annotation to @SqlOperation.
+  - Added support for Vavr object-functional data types in jdbi3-vavr module.
+  - java.time.ZoneId support
+
+3.0.0-beta3
+  - Added Kotlin extension methods to Jdbi class, to work around Kotlin's lack
+    of support for exception transparency: withHandleUnchecked,
+    useHandleUnchecked, inTransactionUnchecked, useTransactionUnchecked,
+    withExtensionUnchecked, useExtensionUnchecked.
+  - Renamed org.jdbi:jdbi3 artifact to org.jdbi:jdbi3-core, for consistency with
+    other modules.
+  - [breaking] StatementContext.getParsedSql() now returns a ParsedSql instead of String
+  - [breaking] Remove SqlStatement fetchForward / Reverse ; statements now FORWARD_ONLY
+
+3.0.0-beta2
+  - [breaking] Removed Handle.update() and Handle.insert(), in favor of
+    Handle.execute(), which does the same thing. Handle.execute() now returns
+    the update count.
+  - Removed core dependency on Guava.
+  - [breaking] Switch from 1- to 0-based indices in OracleReturning.returnParameters()
+  - [breaking] Added StatementContext parameter to NamedArgumentFinder.find() method
+  - [breaking] Moved JoinRowMapper.JoinRow class to top-level class
+  - [breaking] Modified @Register* annotations to be repeatable, instead of using
+    array attributes.
+  - [breaking] Moved and renamed MapEntryMapper.Config to top-level class
+    MapEntryMappers
+  - MapMapper preserves column ordering, #848
+  - [breaking] split Handle.cleanupHandle() into cleanupHandleCommit() and *Rollback()
+  - [breaking] remove TransactionStatus enum
+  - [breaking] Refactored StatementRewriter into TemplateEngine and SqlParser.
+
+3.0.0-beta1
+  - [breaking] Refactored SqlStatementCustomizerFactory.createForParameter(...)
+    - Now returns new SqlStatementParameterCustomizer type, so parameter customizers
+      can be cached and reused for performance.
+    - Now accepts a `Type` parameter, so parameter binders no longer have to check
+      whether the statement is a PreparedBatch.
+  - [breaking] Handlers config class, refactored HandlerFactory permit alternative
+    method handler mapping strategies.
+  - [breaking] Renamed BeanMapper, FieldMapper, and ConstructorMapper's `of(...)`
+    methods to `factory(...)`. Added `of` methods in their place which return
+    RowMappers, whereas the `factory` methods from before return `RowMapperFactory`s.
+  - [breaking] Mixing named and positional parameters in SQL statements will now
+    throw an exception. See https://github.com/jdbi/jdbi/pull/787
+  - Handlers registry allows users to use custom SQL Object method handlers
+    without a SQL method annotation.
+  - HandlerDecorators registry allows adding custom behavior to any SQL Object
+    method, with or without an annotation.
+  - jdbi3-kotlin plugin adds support for mapping Kotlin data classes.
+  - jdbi3-kotlin-sqlobject plugin adds support for Kotlin SQL Objects,
+    including Kotlin default methods, and default parameter values.
+  - Support for collecting results into Map, and Guava's Multimap.
+  - Configuration option to control how "untyped null" arguments are bound.
+    Useful for some database vendors (e.g. Derby, Sybase) that expect a different
+    SQL type constant for null values.
+  - Support boolean[] return type from @SqlBatch methods
+  - Bug fixes:
+    - NullPointerException in Postgres plugin when binding null UUID
+    - IllegalArgumentException with @SqlBatch when the batch is empty
+    - NullPointerException when `null` is bound to an array column.
+
+3.0.0-beta0
+  - Redesigned for Java 8 - lambdas, streams, optionals, exception transparency
+  - Support for java.time (JSR-310) types like LocalDate and OffsetDateTime
+  - Better support for custom collection types, using Java 8 Collector
+  - SQL array support -- finally!
+  - BeanMapper and other reflection-based mappers now recognize snake_case
+    column names, and match them up to Java properties
+  - Plugin architecture that makes it easy to share configuration
+  - Plugins to support types from 3rd party libraries: JodaTime, Guava,
+    StringTemplate, Spring
+  - Plugins to support specific database vendors: H2, Oracle, Postgres
+  - Migration-friendly: Jdbi v2 and v3 will happily coexist within the same
+    project, so you can migrate at your own pace.
+
 2.78
   - @BindIn: fix handling of empty lists on Postgres
   - clear SqlObject ThreadLocals on close, fixes leak on e.g. webapp reload
   - expose Script.getStatements()
 
 2.77
-  - Improved BindIn functionality: can now process Iterables and arrays/varargs 
+  - Improved BindIn functionality: can now process Iterables and arrays/varargs
     of any type, and has configurable handling for a null/empty argument.
     Check the source code comments or your IDE hints for details.
 
@@ -155,7 +327,7 @@
   - minor code cleanups to reduce number of warnings
   - Expose NamedArgumentFinder to allow custom lookup of Arguments. JDBI already provides
     two implementations of the Interface, one for Maps and one for BeanProperties.
-  - Add ability to set query timeout (in seconds) on SQLStatement
+  - Add ability to set query timeout (in seconds) on SqlStatement
 
 2.9.3
   - Add <url /> element to pom so can get into central :-)
@@ -172,7 +344,7 @@
   - Aborted, trying to make gpg signing work correctly
 
 2.8.0
-  - Add methods to SQLStatement and PreparedBatch that allow adding a set of defines
+  - Add methods to SqlStatement and PreparedBatch that allow adding a set of defines
     to the context in one go.
   - Add ~ { and } as legal characters in the colon prefix grammar
 
@@ -189,21 +361,21 @@
     accurate and much more lightweight. As we only calculate time differences, it is
     good enough.
   - fix more compiler warnings
-  - add null checks for all object types on SQLStatement
+  - add null checks for all object types on SqlStatement
   - move object null checks, that don't require boxing/unboxing
     into the Argument classes. Keep the checks for object/primitive
     types in SQL to avoid boxing/unboxing overhead.
 
 2.6.0
    Fix a number of compiler warnings
-   Add new binding methods for SQLStatement
+   Add new binding methods for SqlStatement
     - Integer, Boolean, Byte, Long, Short  Object
     - double, float, short primitive
    All bind methods taking an object should check
    for null values and bind a NullArgument accordingly.
 
 2.5.0
-    Add new binding methods for SQLStatement
+    Add new binding methods for SqlStatement
       - char types
       - boolean as int (for DBs missing a boolean type)
     Re-add unit test removed in 2.4.9 with unicode escapes
@@ -286,7 +458,7 @@
 2.0pre16
     Clean up the build so the stringtemplate stuff is useful
 
-    SQLStatement#bind(*, Character) which converts to a string
+    SqlStatement#bind(*, Character) which converts to a string
 
     Provide a non-caching default statement builder
 
@@ -323,11 +495,11 @@
 
     Renamed PreparedBatchPart.another() to next()
 
-    Change SQLStatement#first to return null on an empty result instead of an NPE
+    Change SqlStatement#first to return null on an empty result instead of an NPE
 
     Allow setting attributes on statement contexts for batches and prepared batches
 
-    SQLStatement.bindNull(...)
+    SqlStatement.bindNull(...)
 
 2.0pre12
     [bugfix] Pass statement context into result mapped queries

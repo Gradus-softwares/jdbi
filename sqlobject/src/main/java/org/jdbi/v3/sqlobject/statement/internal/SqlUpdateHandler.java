@@ -13,10 +13,6 @@
  */
 package org.jdbi.v3.sqlobject.statement.internal;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
-import java.util.function.Function;
-
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.generic.GenericTypes;
 import org.jdbi.v3.core.result.ResultBearing;
@@ -26,6 +22,10 @@ import org.jdbi.v3.sqlobject.UnableToCreateSqlObjectException;
 import org.jdbi.v3.sqlobject.statement.GetGeneratedKeys;
 import org.jdbi.v3.sqlobject.statement.UseRowMapper;
 import org.jdbi.v3.sqlobject.statement.UseRowReducer;
+
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.util.function.Function;
 
 public class SqlUpdateHandler extends CustomizingStatementHandler<Update> {
     private final Function<Update, Object> returner;
@@ -46,22 +46,42 @@ public class SqlUpdateHandler extends CustomizingStatementHandler<Update> {
             String[] columnNames = method.getAnnotation(GetGeneratedKeys.class).value();
 
             this.returner = update -> {
-                ResultBearing resultBearing = update.executeAndReturnGeneratedKeys(columnNames);
-
-                UseRowMapper useRowMapper = method.getAnnotation(UseRowMapper.class);
-                ResultIterable<?> iterable = useRowMapper == null
-                        ? resultBearing.mapTo(returnType)
-                        : resultBearing.map(rowMapperFor(useRowMapper));
-
-                return magic.mappedResult(iterable, update.getContext());
+                if (update.getHandle().isInTransaction()) {
+                    return getGeneratedKeys(method, returnType, magic, columnNames, update);
+                } else {
+                    return update.getHandle().inTransaction(handle -> getGeneratedKeys(method, returnType, magic, columnNames, update));
+                }
             };
         } else if (isNumeric(method.getReturnType())) {
-            this.returner = update -> update.execute();
+            this.returner = update -> {
+                if (update.getHandle().isInTransaction()) {
+                    return update.execute();
+                } else {
+                    return update.getHandle().inTransaction(handle -> update.execute());
+                }
+            };
         } else if (isBoolean(method.getReturnType())) {
-            this.returner = update -> update.execute() > 0;
+            this.returner = update -> {
+                if (update.getHandle().isInTransaction()) {
+                    return update.execute();
+                } else {
+                    return update.getHandle().inTransaction(handle -> update.execute());
+                }
+            };
         } else {
             throw new UnableToCreateSqlObjectException(invalidReturnTypeMessage(method, returnType));
         }
+    }
+
+    private Object getGeneratedKeys(Method method, Type returnType, ResultReturner magic, String[] columnNames, Update update) {
+        ResultBearing resultBearing = update.executeAndReturnGeneratedKeys(columnNames);
+
+        UseRowMapper useRowMapper = method.getAnnotation(UseRowMapper.class);
+        ResultIterable<?> iterable = useRowMapper == null
+            ? resultBearing.mapTo(returnType)
+            : resultBearing.map(rowMapperFor(useRowMapper));
+
+        return magic.mappedResult(iterable, update.getContext());
     }
 
     @Override
@@ -76,19 +96,19 @@ public class SqlUpdateHandler extends CustomizingStatementHandler<Update> {
 
     private boolean isNumeric(Class<?> type) {
         return Number.class.isAssignableFrom(type) ||
-                type.equals(int.class) ||
-                type.equals(long.class) ||
-                type.equals(void.class);
+            type.equals(int.class) ||
+            type.equals(long.class) ||
+            type.equals(void.class);
     }
 
     private boolean isBoolean(Class<?> type) {
         return type.equals(boolean.class) ||
-                type.equals(Boolean.class);
+            type.equals(Boolean.class);
     }
 
     private String invalidReturnTypeMessage(Method method, Type returnType) {
         return method.getDeclaringClass().getSimpleName() + "." + method.getName() +
-                " method is annotated with @SqlUpdate so should return void, boolean, or Number but is returning: " +
-                returnType;
+            " method is annotated with @SqlUpdate so should return void, boolean, or Number but is returning: " +
+            returnType;
     }
 }

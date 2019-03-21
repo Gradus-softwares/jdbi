@@ -22,12 +22,11 @@
     </parent>
 
     <groupId>org.jdbi</groupId>
-    <artifactId>jdbi</artifactId>
-    <name>jDBI</name>
-    <version>3.2.1_gradus</version>
+    <artifactId>jdbi3-parent</artifactId>
+    <version>3.2.1</version>
     <packaging>pom</packaging>
-    <description>
-        jDBI is designed to provide convenient tabular data access in
+    <name>jDBI</name>
+    <description>jDBI is designed to provide convenient tabular data access in
         Java(tm). It uses the Java collections framework for query
         results, provides a convenient means of externalizing sql
         statements, and provides named parameter support for any database
